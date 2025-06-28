@@ -7,3 +7,4 @@ psutil
 kaleido
 graphviz
 torchmetrics
+scikit-learn 
