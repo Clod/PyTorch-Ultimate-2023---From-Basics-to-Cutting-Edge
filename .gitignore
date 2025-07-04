@@ -16,3 +16,4 @@ ind.pubmed*
 *.pyc
 venv/
 .vscode/
+.DS_Store
