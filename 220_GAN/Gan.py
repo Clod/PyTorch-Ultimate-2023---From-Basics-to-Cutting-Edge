@@ -41,6 +41,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from random import uniform
+import os
 
 import seaborn as sns
 sns.set(rc={'figure.figsize':(12,12)})
@@ -126,10 +127,13 @@ generator = nn.Sequential(
 
 # %% training
 LR = 0.001
-NUM_EPOCHS = 2000
+NUM_EPOCHS = 3000
 loss_function = nn.BCELoss()
 optimizer_discriminator = torch.optim.Adam(discriminator.parameters())
 optimizer_generator = torch.optim.Adam(generator.parameters())
+
+# Create directory for saving training progress images if it doesn't exist
+os.makedirs("train_progress", exist_ok=True)
 
 # Outer loop for epochs
 # In each epoch, the discriminator is trained on both real samples from the training data and 
@@ -185,30 +189,40 @@ for epoch in range(NUM_EPOCHS):
             )
             loss_generator.backward()
             optimizer_generator.step()
-    
-            # Show progress
-            if epoch % 10 == 0:
-                print(epoch)
-                print(f"Epoch {epoch}, Discriminator Loss {loss_discriminator}")
-                print(f"Epoch {epoch}, Generator Loss {loss_generator}")
-                with torch.no_grad():
-                    latent_space_samples = torch.randn(1000, 2)
-                    generated_samples = generator(latent_space_samples).detach()
-                plt.figure()
-                plt.plot(generated_samples[:, 0], generated_samples[:, 1], ".")
-                plt.xlim((-20, 20))
-                plt.ylim((-20, 15))
-                plt.text(10, 15, f"Epoch {epoch}")
-                plt.savefig(f"train_progress/image{str(epoch).zfill(3)}.jpg")
+
+    # Show progress at the end of the epoch, not in the batch loop
+    if epoch % 100 == 1:
+        # This condition implies the epoch is odd, so only generator was trained in this epoch.
+        # The `loss_generator` variable holds the value from the last batch.
+        print(f"\n--- Epoch {epoch} ---")
+        print(f"Last batch Generator Loss: {loss_generator.item():.4f}")
+        with torch.no_grad():
+            latent_space_samples = torch.randn(1000, 2)
+            generated_samples = generator(latent_space_samples).detach()
+        plt.figure()
+        plt.plot(generated_samples[:, 0], generated_samples[:, 1], ".")
+        plt.xlim((-20, 20))
+        plt.ylim((-20, 15))
+        plt.text(10, 15, f"Epoch {epoch}")
+        plt.savefig(f"train_progress/image{str(epoch).zfill(3)}.jpg")
+        plt.show()
+        plt.close()  # Close the figure after displaying to free up memory
 
 
     
 
 # %% check the result
+# Generate a random set of points from the latent space and visualize the generated samples.
+# This is done after the training loop to see how well the generator has learned to produce samples
+# that resemble the heart shape.
 latent_space_samples = torch.randn(10000, 2)
+# The generator is used to transform the random noise vectors into 2D points.
+# These points are expected to form a distribution that resembles the heart shape learned during training.
 generated_samples = generator(latent_space_samples)
+# Detach the generated samples from the computation graph to avoid memory issues during plotting.
 generated_samples = generated_samples.detach()
 plt.plot(generated_samples[:, 0], generated_samples[:, 1], ".")
 plt.text(10, 15, f"Epoch {epoch}")
+plt.show()
 
 # %%
